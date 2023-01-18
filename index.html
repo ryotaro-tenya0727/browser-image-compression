@@ -9,7 +9,7 @@
   </head>
 
   <body>
-    <form name="fileinfo">
+    <form id="sampleForm">
       <div>
         <label for="web-worker">
           <input
@@ -19,24 +19,29 @@
             accept="image/*"
             onchange="compressImage(event);"
           />
-          <span id="web-worker-progress"></span>
+          <br />
+          <h3>圧縮の進行状況</h3>
+          <h3 id="web-worker-progress">0%</h3>
         </label>
         <p id="web-worker-result"></p>
       </div>
-      <button type="submit">送信</button>
+      <button type="button">送信</button>
     </form>
 
     <script>
+      let compressedfile;
       function compressImage(event) {
         const file = event.target.files[0];
         const result = document.getElementById("web-worker-result");
         const progressDom = document.getElementById("web-worker-progress");
 
+        // toFixed(2)は小数点二桁まで表示
         result.innerHTML = (file.size / 1024 / 1024).toFixed(2) + "MB => ";
 
         const options = {
           maxSizeMB: 1,
           maxWidthOrHeight: 1000,
+          // onProgressに指定した関数の引数には進行状況を表すパーセントが渡る。
           onProgress: onProgress,
         };
         imageCompression(file, options)
@@ -48,37 +53,29 @@
         <a href="${img}" target="_blank">
           <img src="${img}" width="200" alt="">
         </a>`;
-            return setSubmitEvent(output);
+            compressedfile = output;
           })
           .catch(function (error) {
             console.error(error.message);
           });
 
         function onProgress(percent) {
-          progressDom.innerHTML = `(${percent}%)`;
-          if (percent === 100) {
-            progressDom.innerHTML = "";
-          }
+          progressDom.textContent = `${percent}%`;
         }
       }
 
+      const form = document.querySelector("#sampleForm");
+
+      form.addEventListener("click", function (e) {
+        setSubmitEvent(compressedfile);
+        e.preventDefault();
+      });
+
       function setSubmitEvent(file) {
-        const form = document.forms.namedItem("fileinfo");
-        const formData = new FormData(form);
-        const url = "/post/foo/bar/";
+        const formData = new FormData();
 
-        formData.append("image", file, file.name);
-
-        form.addEventListener("submit", function (e) {
-          axios
-            .post(url, formData, {
-              headers: {
-                "content-type": "multipart/form-data",
-              },
-            })
-            .then((res) => console.log(res));
-          e.preventDefault();
-        });
+        formData.append("image", compressedfile, compressedfile.name);
+        console.log(formData.get("image"));
       }
     </script>
   </body>
