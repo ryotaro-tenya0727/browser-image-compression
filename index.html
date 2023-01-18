@@ -1,0 +1,85 @@
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@latest/dist/browser-image-compression.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <title>JavaScriptを読み込む</title>
+  </head>
+
+  <body>
+    <form name="fileinfo">
+      <div>
+        <label for="web-worker">
+          <input
+            id="web-worker"
+            type="file"
+            name="image"
+            accept="image/*"
+            onchange="compressImage(event);"
+          />
+          <span id="web-worker-progress"></span>
+        </label>
+        <p id="web-worker-result"></p>
+      </div>
+      <button type="submit">送信</button>
+    </form>
+
+    <script>
+      function compressImage(event) {
+        const file = event.target.files[0];
+        const result = document.getElementById("web-worker-result");
+        const progressDom = document.getElementById("web-worker-progress");
+
+        result.innerHTML = (file.size / 1024 / 1024).toFixed(2) + "MB => ";
+
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1000,
+          onProgress: onProgress,
+        };
+        imageCompression(file, options)
+          .then(function (output) {
+            const img = URL.createObjectURL(output);
+            result.innerHTML +=
+              (output.size / 1024 / 1024).toFixed(2) + "MB<br>";
+            result.innerHTML += `
+        <a href="${img}" target="_blank">
+          <img src="${img}" width="200" alt="">
+        </a>`;
+            return setSubmitEvent(output);
+          })
+          .catch(function (error) {
+            console.error(error.message);
+          });
+
+        function onProgress(percent) {
+          progressDom.innerHTML = `(${percent}%)`;
+          if (percent === 100) {
+            progressDom.innerHTML = "";
+          }
+        }
+      }
+
+      function setSubmitEvent(file) {
+        const form = document.forms.namedItem("fileinfo");
+        const formData = new FormData(form);
+        const url = "/post/foo/bar/";
+
+        formData.append("image", file, file.name);
+
+        form.addEventListener("submit", function (e) {
+          axios
+            .post(url, formData, {
+              headers: {
+                "content-type": "multipart/form-data",
+              },
+            })
+            .then((res) => console.log(res));
+          e.preventDefault();
+        });
+      }
+    </script>
+  </body>
+</html>
